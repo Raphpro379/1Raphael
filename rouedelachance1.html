@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎡 Roue de la Chance — Entreprise R</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--r1:#FF3366;--r2:#FF9900;--r3:#FFDD00;--r4:#00CC66;--r5:#0099FF;--r6:#9933FF;--dark:#0D0D0D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:radial-gradient(ellipse at top,#1a0a2e,#0D0D0D);min-height:100vh;padding:1.5rem 1rem;color:#fff}
+h1{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;letter-spacing:.08em;background:linear-gradient(90deg,var(--r1),var(--r2),var(--r3),var(--r4),var(--r5),var(--r6));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:.3rem}
+.subtitle{color:#888;font-size:13px;text-align:center;margin-bottom:1.5rem}
+.layout{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start}
+
+/* ROUE */
+.wheel-section{display:flex;flex-direction:column;align-items:center;gap:1rem}
+.wheel-outer{position:relative;width:380px;height:380px}
+#wcanvas{border-radius:50%;display:block;cursor:pointer}
+.pointer{position:absolute;top:50%;right:-18px;transform:translateY(-50%);width:0;height:0;border-top:18px solid transparent;border-bottom:18px solid transparent;border-right:48px solid var(--r3);filter:drop-shadow(0 0 8px rgba(255,221,0,.8));z-index:5}
+
+.spin-btn{padding:14px 44px;font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:.1em;background:linear-gradient(135deg,var(--r1),var(--r6));color:#fff;border:none;border-radius:16px;cursor:pointer;transition:all .2s;box-shadow:0 6px 20px rgba(255,51,102,.4)}
+.spin-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(255,51,102,.6)}
+.spin-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.result-box{background:rgba(0,0,0,.4);border:1px solid #333;border-radius:16px;padding:1.2rem;text-align:center;width:100%;max-width:380px;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.res-emoji{font-size:2.5rem;line-height:1}
+.res-text{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:.05em}
+.res-sub{font-size:12px;color:#888;font-weight:600}
+
+.histo-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:380px}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.1)}
+
+/* DROITE */
+.right{display:flex;flex-direction:column;gap:1rem}
+.card{background:#1A1A1A;border:1px solid #2a2a2a;border-radius:16px;padding:1.2rem}
+.card h2{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.05em;margin-bottom:.9rem}
+
+/* TABS */
+.tabs{display:flex;gap:3px;background:#111;border-radius:8px;padding:3px;margin-bottom:.9rem}
+.tab{flex:1;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer;background:none;color:#888;transition:all .15s;font-family:'Nunito',sans-serif;text-align:center}
+.tab.on{background:#2a2a2a;color:#fff}
+.tab-panel{display:none}
+.tab-panel.on{display:block}
+
+/* SEGMENTS */
+.seg-list{display:flex;flex-direction:column;gap:5px;max-height:240px;overflow-y:auto;margin-bottom:8px}
+.seg-row{display:flex;align-items:center;gap:5px;padding:6px 8px;background:#111;border-radius:8px;border:1px solid #222}
+.seg-color-dot{width:24px;height:24px;border-radius:5px;flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.15);transition:transform .15s}
+.seg-color-dot:hover{transform:scale(1.15)}
+.seg-emoji-i{width:38px;padding:3px;background:#0a0a0a;border:1px solid #333;border-radius:5px;color:#fff;font-size:.9rem;text-align:center;outline:none;font-family:system-ui}
+.seg-text-i{flex:1;padding:5px 8px;background:#0a0a0a;border:1px solid #333;border-radius:5px;color:#fff;font-family:'Nunito',sans-serif;font-size:12px;outline:none}
+.seg-text-i:focus{border-color:var(--r2)}
+.seg-del{background:none;border:none;color:#444;cursor:pointer;font-size:15px;transition:color .15s;flex-shrink:0}
+.seg-del:hover{color:var(--r1)}
+
+.add-row{display:flex;gap:5px}
+.add-inp{flex:1;padding:7px 10px;background:#111;border:1.5px solid #333;border-radius:8px;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;outline:none}
+.add-inp:focus{border-color:var(--r4)}
+.add-btn-s{padding:7px 12px;background:var(--r4);color:#000;border:none;border-radius:8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.05em;white-space:nowrap}
+
+/* STYLE */
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px}
+.sopt{padding:7px;border:1.5px solid #333;border-radius:8px;background:none;color:#888;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Nunito',sans-serif;text-align:center}
+.sopt.on{border-color:var(--r2);color:var(--r2);background:rgba(255,153,0,.08)}
+
+/* PRÉSETS */
+.preset-list{display:flex;flex-direction:column;gap:5px}
+.preset-btn{padding:8px 12px;border:1.5px solid #333;border-radius:8px;background:none;color:#888;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;text-align:left;transition:all .15s}
+.preset-btn:hover{border-color:#555;color:#fff;background:#111}
+
+/* SAUVEGARDE */
+.save-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;max-height:200px;overflow-y:auto}
+.save-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#111;border-radius:8px;border:1px solid #222}
+.save-info{flex:1;min-width:0}
+.save-nom{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.save-meta{font-size:10px;color:#555;margin-top:2px}
+.save-acts{display:flex;gap:4px}
+.sa-btn{padding:4px 8px;font-size:11px;font-weight:700;border:1px solid #333;border-radius:6px;cursor:pointer;background:none;color:#888;font-family:'Nunito',sans-serif;transition:all .12s}
+.sa-btn:hover{background:#222;color:#fff}
+.sa-btn.del:hover{background:#3a1a1a;color:var(--r1);border-color:var(--r1)}
+
+.field{margin-bottom:8px}
+.field label{display:block;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.field input{width:100%;padding:7px 10px;background:#111;border:1.5px solid #333;border-radius:8px;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;outline:none}
+.field input:focus{border-color:var(--r2)}
+
+.action-btn{padding:8px 14px;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.05em;border:none;border-radius:8px;cursor:pointer;transition:all .15s;margin-right:5px;margin-bottom:5px}
+.action-btn:hover{opacity:.85}
+
+/* STATS */
+.stats-mini{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat-mini{background:#111;border-radius:8px;padding:8px;text-align:center}
+.stat-mini-val{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.05em}
+.stat-mini-label{font-size:9px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* MODAL */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(8px)}
+#modal.open{display:flex}
+.modal-box{background:linear-gradient(135deg,#1a0a2e,#2a1a0e);border-radius:20px;padding:2.5rem;text-align:center;width:90%;max-width:340px;animation:pop .35s cubic-bezier(.17,.67,.34,1.3)}
+@keyframes pop{from{transform:scale(.6) rotate(-8deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.modal-emoji{font-size:4.5rem;display:block;margin-bottom:.8rem}
+.modal-titre{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:.05em;margin-bottom:.4rem}
+.modal-sub{color:#aaa;font-size:13px;margin-bottom:1.5rem}
+.modal-close{padding:11px 28px;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.08em;background:linear-gradient(90deg,var(--r1),var(--r6));color:#fff;border:none;border-radius:12px;cursor:pointer;transition:all .2s}
+.modal-close:hover{opacity:.88;transform:translateY(-2px)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--r2);color:#000;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:700;opacity:0;transition:all .25s;z-index:9999;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:750px){.layout{grid-template-columns:1fr}.wheel-outer{width:300px;height:300px}}
+</style>
+</head>
+<body>
+
+<h1>🎡 Roue de la Chance</h1>
+<p class="subtitle">Entreprise R — Personnalisez, sauvegardez et tournez !</p>
+
+<div class="layout">
+
+  <!-- GAUCHE : ROUE -->
+  <div class="wheel-section">
+    <div class="wheel-outer">
+      <canvas id="wcanvas" width="380" height="380" onclick="spinWheel()"></canvas>
+      <div class="pointer"></div>
+    </div>
+
+    <button class="spin-btn" id="spin-btn" onclick="spinWheel()">🎡 TOURNER !</button>
+
+    <div class="result-box">
+      <div class="res-emoji" id="res-emoji">🎡</div>
+      <div class="res-text" id="res-text" style="color:#888">Tournez la roue !</div>
+      <div class="res-sub" id="res-sub">Cliquez sur le bouton ci-dessus</div>
+    </div>
+
+    <div class="histo-chips" id="histo-chips"></div>
+
+    <div class="stats-mini" style="width:100%;max-width:380px">
+      <div class="stat-mini"><div class="stat-mini-val" id="st-total" style="color:var(--r5)">0</div><div class="stat-mini-label">Tours joués</div></div>
+      <div class="stat-mini"><div class="stat-mini-val" id="st-fav" style="color:var(--r3)">—</div><div class="stat-mini-label">Plus fréquent</div></div>
+    </div>
+  </div>
+
+  <!-- DROITE : CONFIG -->
+  <div class="right">
+    <div class="card">
+      <h2 style="color:var(--r2)">⚙️ Personnaliser</h2>
+
+      <div class="tabs">
+        <button class="tab on" onclick="setTab(0,this)">📝 Segments</button>
+        <button class="tab" onclick="setTab(1,this)">🎨 Style</button>
+        <button class="tab" onclick="setTab(2,this)">🎁 Présets</button>
+        <button class="tab" onclick="setTab(3,this)">💾 Sauvegardes</button>
+      </div>
+
+      <!-- SEGMENTS -->
+      <div id="tp-0" class="tab-panel on">
+        <div class="seg-list" id="seg-list"></div>
+        <div class="add-row" style="margin-bottom:8px">
+          <input type="text" class="add-inp" id="new-seg-inp" placeholder="Nouveau segment..." onkeydown="if(event.key==='Enter')addSeg()">
+          <button class="add-btn-s" onclick="addSeg()">+ Ajouter</button>
+        </div>
+        <button class="action-btn" style="background:#222;color:#fff" onclick="shuffleSegs()">🔀 Mélanger</button>
+        <button class="action-btn" style="background:#3a1a1a;color:var(--r1)" onclick="clearStats()">🗑 Vider stats</button>
+      </div>
+
+      <!-- STYLE -->
+      <div id="tp-1" class="tab-panel">
+        <div class="field"><label>Titre de la roue</label>
+          <input type="text" id="wheel-title" value="Roue de la Chance" oninput="draw()">
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Style des couleurs</div>
+        <div class="style-grid">
+          <button class="sopt on" onclick="setStyle('arc',this)">🌈 Arc-en-ciel</button>
+          <button class="sopt" onclick="setStyle('dark',this)">🌑 Sombre</button>
+          <button class="sopt" onclick="setStyle('pastel',this)">🌸 Pastel</button>
+          <button class="sopt" onclick="setStyle('neon',this)">⚡ Néon</button>
+        </div>
+        <div class="field" style="margin-top:8px"><label>Taille du texte</label>
+          <input type="range" id="font-size" min="8" max="18" value="13" oninput="draw()" style="width:100%;accent-color:var(--r2)">
+        </div>
+      </div>
+
+      <!-- PRÉSETS -->
+      <div id="tp-2" class="tab-panel">
+        <div class="preset-list">
+          <button class="preset-btn" onclick="loadPreset('entreprise')">💼 Entreprise R</button>
+          <button class="preset-btn" onclick="loadPreset('defis')">💪 Défis fun</button>
+          <button class="preset-btn" onclick="loadPreset('semaine')">📅 Jours semaine</button>
+          <button class="preset-btn" onclick="loadPreset('repas')">🍽 Que manger ?</button>
+          <button class="preset-btn" onclick="loadPreset('activites')">🎮 Activités</button>
+          <button class="preset-btn" onclick="loadPreset('oui_non')">✅ Oui ou Non</button>
+          <button class="preset-btn" onclick="loadPreset('nombres')">🔢 Nombres 1-8</button>
+          <button class="preset-btn" onclick="loadPreset('couleurs')">🎨 Couleurs</button>
+        </div>
+      </div>
+
+      <!-- SAUVEGARDES -->
+      <div id="tp-3" class="tab-panel">
+        <div class="save-list" id="save-list"></div>
+        <div class="field"><label>Nom de la sauvegarde</label>
+          <input type="text" id="save-name-inp" placeholder="Ex : Ma roue Entreprise R...">
+        </div>
+        <button class="action-btn" style="background:var(--r4);color:#000" onclick="saveWheel()">💾 Sauvegarder la roue actuelle</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="modal-box" id="modal-box">
+    <span class="modal-emoji" id="modal-emoji">🎉</span>
+    <div class="modal-titre" id="modal-titre"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">🎡 Retourner !</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== PALETTES =====
+const PALS = {
+  arc:    ['#FF3366','#FF9900','#FFDD00','#00CC66','#0099FF','#9933FF','#FF6B9D','#00FFCC','#FF5533','#33CCFF'],
+  dark:   ['#1a1a2e','#16213e','#0f3460','#533483','#e94560','#0f2a3d','#1a2e1a','#2e1a1a'],
+  pastel: ['#FFB3C6','#FFD6A5','#FDFFB6','#CAFFBF','#9BF6FF','#BDB2FF','#FFC6FF','#FFADAD'],
+  neon:   ['#FF0080','#FF8C00','#FFE500','#00FF9F','#00E5FF','#BF00FF','#FF0055','#00FF41'],
+};
+
+const PRESETS = {
+  entreprise:[
+    {t:'Comics R Blague',e:'📚'},{t:'R-HO Magazine',e:'📰'},{t:'R-Radio',e:'📻'},
+    {t:'Fleur de Joie',e:'🌸'},{t:'Pass VIP',e:'👑'},{t:'Surprise !',e:'🎁'},
+    {t:'Rien...',e:'😔'},{t:'JACKPOT !',e:'💰'},
+  ],
+  defis:[
+    {t:'10 pompes !',e:'💪'},{t:'Chanter une chanson',e:'🎤'},{t:'Faire le clown',e:'🤡'},
+    {t:'Imiter quelqu\'un',e:'🎭'},{t:'Danser 30s',e:'💃'},{t:'Dire un secret',e:'🤫'},
+    {t:'Faire un câlin',e:'🤗'},{t:'Libre de défi',e:'😎'},
+  ],
+  semaine:[
+    {t:'Lundi',e:'😐'},{t:'Mardi',e:'😊'},{t:'Mercredi',e:'🎉'},
+    {t:'Jeudi',e:'💪'},{t:'Vendredi',e:'😄'},{t:'Samedi',e:'🥳'},{t:'Dimanche',e:'😴'},
+  ],
+  repas:[
+    {t:'Pizza',e:'🍕'},{t:'Pâtes',e:'🍝'},{t:'Burger',e:'🍔'},{t:'Salade',e:'🥗'},
+    {t:'Soupe',e:'🍲'},{t:'Sandwich',e:'🥪'},{t:'Riz',e:'🍚'},{t:'Surprise chef',e:'👨‍🍳'},
+  ],
+  activites:[
+    {t:'Jeu vidéo',e:'🎮'},{t:'Lecture',e:'📚'},{t:'Dessin',e:'🎨'},{t:'Sport',e:'⚽'},
+    {t:'Musique',e:'🎵'},{t:'Film',e:'🎬'},{t:'Promenade',e:'🚶'},{t:'Cuisine',e:'🍳'},
+  ],
+  oui_non:[
+    {t:'OUI !',e:'✅'},{t:'NON !',e:'❌'},{t:'Peut-être',e:'🤔'},
+    {t:'Absolument !',e:'💯'},{t:'Jamais !',e:'🚫'},{t:'Sans hésiter',e:'⚡'},
+  ],
+  nombres:[
+    {t:'1',e:'1️⃣'},{t:'2',e:'2️⃣'},{t:'3',e:'3️⃣'},{t:'4',e:'4️⃣'},
+    {t:'5',e:'5️⃣'},{t:'6',e:'6️⃣'},{t:'7',e:'7️⃣'},{t:'8',e:'8️⃣'},
+  ],
+  couleurs:[
+    {t:'Rouge',e:'🔴'},{t:'Bleu',e:'🔵'},{t:'Vert',e:'🟢'},{t:'Jaune',e:'🟡'},
+    {t:'Orange',e:'🟠'},{t:'Violet',e:'🟣'},{t:'Rose',e:'🌸'},{t:'Blanc',e:'⚪'},
+  ],
+};
+
+// ===== STATE =====
+let segs = [
+  {t:'Comics R Blague',e:'📚'},{t:'R-HO Magazine',e:'📰'},{t:'R-Radio',e:'📻'},
+  {t:'Fleur de Joie',e:'🌸'},{t:'Pass VIP',e:'👑'},{t:'Surprise !',e:'🎁'},
+];
+let wheelStyle = 'arc';
+let rotation = 0;   // angle actuel en radians
+let spinning = false;
+let totalSpins = 0;
+let spinCounts = {};
+let spinHisto = [];
+
+const canvas = document.getElementById('wcanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const CX = W/2, CY = H/2, R = W/2 - 8;
+
+// ===== DESSIN =====
+function getPal(){return PALS[wheelStyle]||PALS.arc;}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  if(!segs.length) return;
+  const pal = getPal();
+  const n = segs.length;
+  const slice = (2*Math.PI)/n;
+  const fs = parseInt(document.getElementById('font-size')?.value||'13');
+
+  // Ombre portée
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.6)';
+  ctx.shadowBlur=20;
+
+  for(let i=0;i<n;i++){
+    const a0 = rotation + i*slice;
+    const a1 = a0 + slice;
+    const color = pal[i%pal.length];
+
+    // Segment
+    ctx.beginPath();
+    ctx.moveTo(CX,CY);
+    ctx.arc(CX,CY,R,a0,a1);
+    ctx.closePath();
+    ctx.fillStyle=color;
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.25)';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Textes et emojis
+  for(let i=0;i<n;i++){
+    const a0 = rotation + i*slice;
+    const mid = a0 + slice/2;
+    ctx.save();
+    ctx.translate(CX,CY);
+    ctx.rotate(mid);
+
+    // Emoji
+    ctx.font = `${fs+5}px serif`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.fillText(segs[i].e||'', R-8+1, 5+1);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(segs[i].e||'', R-8, 5);
+
+    // Texte
+    ctx.font = `bold ${fs}px Nunito,sans-serif`;
+    let txt = segs[i].t||'';
+    if(ctx.measureText(txt).width > R*0.55) txt = txt.slice(0,Math.floor(R*0.55/7))+'…';
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    ctx.fillText(txt, R-36+1, 5+1);
+    ctx.fillStyle='#fff';
+    ctx.fillText(txt, R-36, 5);
+
+    ctx.restore();
+  }
+
+  // Centre
+  ctx.beginPath();
+  ctx.arc(CX,CY,28,0,2*Math.PI);
+  const grad = ctx.createRadialGradient(CX-5,CY-5,2,CX,CY,28);
+  grad.addColorStop(0,'#fff');
+  grad.addColorStop(1,'#bbb');
+  ctx.fillStyle=grad;
+  ctx.fill();
+  ctx.strokeStyle='#888';ctx.lineWidth=3;ctx.stroke();
+
+  ctx.font='bold 18px serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#555';
+  ctx.fillText('🎡',CX,CY);
+  ctx.textBaseline='alphabetic';
+
+  // Titre
+  ctx.font='bold 11px Nunito,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,.15)';
+  const title = document.getElementById('wheel-title')?.value||'Roue de la Chance';
+  ctx.fillText(title, CX, H-6);
+}
+
+// ===== SPIN =====
+function spinWheel(){
+  if(spinning||segs.length<2){
+    if(segs.length<2) toast('Ajoutez au moins 2 segments !');
+    return;
+  }
+
+  // Activer le contexte audio au premier clic utilisateur
+  try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+
+  spinning=true;
+  document.getElementById('spin-btn').disabled=true;
+
+  // Choisir segment aléatoire
+  const chosen = Math.floor(Math.random()*segs.length);
+
+  // Angle du milieu du segment choisi
+  const n = segs.length;
+  const slice = (2*Math.PI)/n;
+  // La flèche pointe à droite (angle π depuis le centre)
+  // On veut que le milieu du segment chosen pointe à droite
+  // angle du milieu du segment chosen dans le repère = rotation + chosen*slice + slice/2
+  // On veut cette valeur ≡ π [2π]
+  const targetMid = Math.PI; // flèche à droite
+  const currentMid = chosen*slice + slice/2;
+  // On cherche newRotation tel que newRotation + currentMid ≡ targetMid [2π]
+  let delta = targetMid - currentMid;
+  // Ajouter plusieurs tours complets (min 5)
+  const extraTurns = (5 + Math.floor(Math.random()*5)) * 2 * Math.PI;
+  // Normaliser delta pour aller dans le sens positif
+  while(delta < 0) delta += 2*Math.PI;
+  const totalAngle = extraTurns + delta;
+  const startRot = rotation;
+  const endRot = startRot + totalAngle;
+
+  const duration = 3500 + Math.random()*1200;
+  const startTime = performance.now();
+
+  function easeOut(t){ return 1 - Math.pow(1-t, 4); }
+
+  function animate(now){
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed/duration, 1);
+    rotation = startRot + easeOut(t)*totalAngle;
+    draw();
+    if(t < 1){
+      requestAnimationFrame(animate);
+    } else {
+      rotation = endRot % (2*Math.PI);
+      spinning = false;
+      document.getElementById('spin-btn').disabled = false;
+      onResult(chosen);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function onResult(idx){
+  const seg = segs[idx];
+  const color = getPal()[idx%getPal().length];
+  totalSpins++;
+  spinCounts[seg.t] = (spinCounts[seg.t]||0)+1;
+  spinHisto.unshift({seg,color});
+  if(spinHisto.length>8) spinHisto.pop();
+
+  // Inline
+  document.getElementById('res-emoji').textContent = seg.e||'🎉';
+  document.getElementById('res-text').textContent = seg.t;
+  document.getElementById('res-text').style.color = color;
+  document.getElementById('res-sub').textContent = 'Tour n°'+totalSpins;
+
+  // Stats
+  document.getElementById('st-total').textContent = totalSpins;
+  const fav = Object.entries(spinCounts).sort((a,b)=>b[1]-a[1])[0];
+  const favTxt = fav ? fav[0] : '—';
+  document.getElementById('st-fav').textContent = favTxt.length>8?favTxt.slice(0,8)+'…':favTxt;
+
+  // Chips
+  document.getElementById('histo-chips').innerHTML = spinHisto.map(h=>`
+    <div class="chip" style="background:${h.color}22;color:${h.color};border-color:${h.color}44">${h.seg.e||''} ${h.seg.t}</div>`).join('');
+
+  // Son
+  playSound();
+
+  // Modal après délai
+  setTimeout(()=>{
+    document.getElementById('modal-emoji').textContent = seg.e||'🎉';
+    document.getElementById('modal-titre').textContent = seg.t;
+    document.getElementById('modal-titre').style.color = color;
+    document.getElementById('modal-sub').textContent = 'Tour n°'+totalSpins+' — Bonne chance !';
+    document.getElementById('modal-box').style.borderColor = color;
+    document.getElementById('modal-box').style.boxShadow = `0 0 40px ${color}44`;
+    document.getElementById('modal').classList.add('open');
+    confetti(color);
+  }, 300);
+}
+
+// ===== SON =====
+let audioCtx = null;
+function playSound(){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const notes=[[523,.08],[659,.08],[784,.08],[1047,.12],[784,.08],[1047,.4]];
+    let t=audioCtx.currentTime;
+    notes.forEach(([f,d])=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.frequency.value=f;o.type='sine';
+      g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+      o.start(t);o.stop(t+d);t+=d*.85;
+    });
+  }catch(e){}
+}
+
+// ===== CONFETTIS =====
+function confetti(color){
+  for(let i=0;i<25;i++){
+    const d=document.createElement('div');
+    const size=6+Math.random()*8;
+    d.style.cssText=`position:fixed;width:${size}px;height:${size}px;border-radius:${Math.random()>0.5?'50%':'2px'};background:${Math.random()>0.5?color:'#fff'};left:${20+Math.random()*60}vw;top:-20px;z-index:998;pointer-events:none;transition:all ${1.5+Math.random()*1.5}s ease-out`;
+    document.body.appendChild(d);
+    setTimeout(()=>{d.style.top=(40+Math.random()*50)+'vh';d.style.left=(10+Math.random()*80)+'vw';d.style.transform=`rotate(${Math.random()*720}deg)`;d.style.opacity='0';},50);
+    setTimeout(()=>d.remove(),3500);
+  }
+}
+
+// ===== SEGMENTS =====
+function renderSegs(){
+  const pal=getPal();
+  document.getElementById('seg-list').innerHTML=segs.map((s,i)=>`
+    <div class="seg-row">
+      <div class="seg-color-dot" style="background:${pal[i%pal.length]}" title="Couleur automatique"></div>
+      <input type="text" class="seg-emoji-i" value="${s.e||''}" placeholder="😀" oninput="segs[${i}].e=this.value;draw()">
+      <input type="text" class="seg-text-i" value="${s.t||''}" placeholder="Texte..." oninput="segs[${i}].t=this.value;draw()">
+      <button class="seg-del" onclick="removeSeg(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addSeg(){
+  const v=document.getElementById('new-seg-inp').value.trim();
+  if(!v){toast('Écris un texte !');return;}
+  segs.push({t:v,e:'🎯'});
+  document.getElementById('new-seg-inp').value='';
+  renderSegs();draw();toast('✅ Segment ajouté !');
+}
+
+function removeSeg(i){
+  if(segs.length<=2){toast('Minimum 2 segments !');return;}
+  segs.splice(i,1);renderSegs();draw();
+}
+
+function shuffleSegs(){
+  segs=segs.sort(()=>Math.random()-.5);
+  renderSegs();draw();toast('🔀 Mélangé !');
+}
+
+function clearStats(){
+  spinCounts={};totalSpins=0;spinHisto=[];
+  document.getElementById('histo-chips').innerHTML='';
+  document.getElementById('st-total').textContent='0';
+  document.getElementById('st-fav').textContent='—';
+  toast('🗑 Stats vidées');
+}
+
+// ===== STYLE =====
+function setStyle(s,btn){
+  wheelStyle=s;
+  document.querySelectorAll('.sopt').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderSegs();draw();
+}
+
+// ===== PRÉSETS =====
+function loadPreset(name){
+  const p=PRESETS[name];if(!p)return;
+  segs=p.map(x=>({t:x.t,e:x.e}));
+  renderSegs();draw();toast('🎁 Préset chargé !');
+}
+
+// ===== SAUVEGARDE =====
+function getSaves(){try{return JSON.parse(localStorage.getItem('roues_saves'))||[];}catch(e){return[];}}
+function setSaves(d){localStorage.setItem('roues_saves',JSON.stringify(d));}
+
+function saveWheel(){
+  const nom=document.getElementById('save-name-inp').value.trim();
+  if(!nom){toast('Donne un nom à ta sauvegarde !');return;}
+  const saves=getSaves();
+  saves.unshift({id:Date.now(),nom,segs:[...segs],style:wheelStyle,date:new Date().toLocaleDateString('fr-CH')});
+  setSaves(saves);
+  document.getElementById('save-name-inp').value='';
+  renderSaves();
+  toast('💾 Roue "'+nom+'" sauvegardée !');
+}
+
+function loadSave(id){
+  const s=getSaves().find(x=>x.id===id);if(!s)return;
+  segs=[...s.segs];
+  wheelStyle=s.style||'arc';
+  document.querySelectorAll('.sopt').forEach(b=>b.classList.remove('on'));
+  document.querySelector(`.sopt[onclick="setStyle('${wheelStyle}',this)"]`)?.classList.add('on');
+  renderSegs();draw();
+  toast('📂 Roue "'+s.nom+'" chargée !');
+}
+
+function deleteSave(id){
+  if(!confirm('Supprimer cette sauvegarde ?'))return;
+  setSaves(getSaves().filter(x=>x.id!==id));
+  renderSaves();toast('🗑 Supprimée');
+}
+
+function renderSaves(){
+  const saves=getSaves();
+  const list=document.getElementById('save-list');
+  if(!saves.length){list.innerHTML='<div style="color:#555;font-size:13px;padding:8px 0;text-align:center">Aucune sauvegarde</div>';return;}
+  list.innerHTML=saves.map(s=>`
+    <div class="save-item">
+      <div class="save-info">
+        <div class="save-nom">🎡 ${s.nom}</div>
+        <div class="save-meta">${s.segs.length} segments · ${s.date}</div>
+      </div>
+      <div class="save-acts">
+        <button class="sa-btn" onclick="loadSave(${s.id})">📂</button>
+        <button class="sa-btn del" onclick="deleteSave(${s.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ===== TABS =====
+function setTab(i,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tp-'+i).classList.add('on');
+  if(i===3) renderSaves();
+}
+
+// ===== TOAST =====
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===== INIT =====
+renderSegs();
+draw();
+renderSaves();
+</script>
+</body>
+</html>
